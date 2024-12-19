@@ -36,8 +36,11 @@ with col1:
     - First and second period grades
     - Participation in extracurricular activities
 
-    The goal is to understand how these factors influence academic success and predict a student's final grade.
-    """)
+    Link to Dataset: https://archive.ics.uci.edu/dataset/320/student+performance
+    
+    This project is a collaborative initiative brought by SuperDataScience community
+
+ """)
 
 # Right column: Feature input
 with col2:
