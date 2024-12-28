@@ -38,7 +38,8 @@ if uploaded_file:
 
         # Preprocessing
         st.subheader("Data Preprocessing")
-        cat_indices = st.multiselect("Select categorical columns (indices):", list(range(X.shape[1])))
+        # cat_indices = st.multiselect("Select categorical columns (indices):", list(range(X.shape[1])))
+        cat_indices = st.multiselect("[0, 1, 3, 4, 5, 8, 9, 10, 11, 15, 16, 17, 18, 19, 20, 21, 22, 23]", list(range(X.shape[1])))
         num_indices = [i for i in range(X.shape[1]) if i not in cat_indices]
 
         X_cat = X[:, cat_indices]
