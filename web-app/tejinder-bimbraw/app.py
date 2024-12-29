@@ -1,12 +1,8 @@
-import streamlit as st
-import numpy as np
 import pandas as pd
-import joblib
+import streamlit as st
+import pickle
 import os
-
-# Set page configuration and title
-st.set_page_config(page_title='Student Performance Prediction', layout='centered')
-
+import joblib
 # Cache the model loading
 @st.cache_resource
 def load_model():
@@ -17,62 +13,38 @@ def load_model():
 model = load_model()
 
 # App title
-st.title(":orange[Student Performance Prediction]")  # Title spans across the whole page
+st.title("Student Performance Predictor")
 
+# Instructions
+st.write("""
+    This app predicts the target variable based on the features provided.
+    Please enter values for the features and press 'Predict' to see the result.
+""")
 
-# Split the page into two columns
-col1, col2 = st.columns([1, 2])  # Split into two columns: col1 takes 1/3, col2 takes 2/3
+# Input fields for user to enter data
+absences = st.number_input('Absences', min_value=0.0, value=0.0)
+higher = st.number_input('Wants to take higher education (binary)', min_value=0, max_value=1, value=0)
+famrel = st.number_input('Quality of family relationships (scale 1 to 5)', min_value=1, max_value=5, value=3)
+G1 = st.number_input('First period grade (0 to 20)', min_value=0, max_value=20, value=0)
+G2 = st.number_input('Second period grade (0 to 20)', min_value=0, max_value=20, value=0)
 
-# Left column: About the study
-with col1:
-    st.header("About the Study")
-    st.write("""
-    This study explores various factors that affect student performance, 
-    with the goal of predicting their final grades based on input features. 
-    Some of the key features include:
-    - Mother's education level
-    - Alcohol consumption on workdays and weekends
-    - Number of school absences
-    - First and second period grades
-    - Participation in extracurricular activities
+# Gather the input data into a DataFrame
+input_data = pd.DataFrame([[absences, higher, famrel, G1, G2]], columns=['absences', 'higher', 'famrel', 'G1', 'G2'])
 
-    Link to Dataset: https://archive.ics.uci.edu/dataset/320/student+performance
-    
-    This project is a collaborative initiative brought by SuperDataScience community
+# Convert the columns to the correct data types (numeric)
+input_data['higher'] = input_data['higher'].astype(int)
+input_data['famrel'] = pd.to_numeric(input_data['famrel'], errors='coerce')
+input_data['G1'] = pd.to_numeric(input_data['G1'], errors='coerce')
+input_data['G2'] = pd.to_numeric(input_data['G2'], errors='coerce')
 
- """)
-
-# Right column: Feature input
-with col2:
-
-    st.header("Input Features")  # Feature input title is now part of the input container
-
-
-    absences = st.number_input("Number of School Absences (0-93)", min_value=0, max_value=93, step=1)
-    G1 = st.number_input("First Period Grade (0-20)", min_value=0, max_value=20, step=1)
-    G2 = st.number_input("Second Period Grade (0-20)", min_value=0, max_value=20, step=1)
-    higher = st.selectbox("Aiming for Higher Education (yes/no)", ['yes', 'no'])
-    famrel = st.number_input("quality of family relationships on scale of 1 to 5 (5 being the best)",min_value=1,max_value=5,step = 1)
-
-    # Columns definition for model prediction
-    columns = [ 'absences', 'G1', 'G2', 'higher','famrel']
-
-    def preprocess_input( absences, G1, G2, higher, famrel):
-        # Encode categorical variables
-        higher_encoded = 1 if higher == 'yes' else 0
-        
-                
-        # Construct input array
-        row = np.array([ absences, G1, G2, higher_encoded,famrel])
-        return pd.DataFrame([row], columns=columns)
-
-    # Prediction function
-    def predict():
-        X = preprocess_input( absences, G1, G2, higher,famrel)
-        with st.spinner("Making prediction..."):
-            prediction = model.predict(X)[0]
-        st.success(f"Predicted Final Grade: {prediction:.2f}")
-
-    # Prediction button
-    if st.button("Predict"):
-        predict()
+# Check if any conversion failed (i.e., if there are NaN values)
+if input_data.isnull().any().any():
+    st.error("Some of the input values could not be converted to numbers. Please check your inputs.")
+else:
+    # Predict when the button is clicked
+    if st.button('Predict'):
+        try:
+            prediction = model.predict(input_data)
+            st.write(f"Predicted value: {prediction[0]}")
+        except Exception as e:
+            st.error(f"Error making prediction: {e}")
