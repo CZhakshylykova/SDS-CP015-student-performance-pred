@@ -1,7 +1,10 @@
+
+
 import streamlit as st
 import joblib
 import numpy as np
 import pandas as pd
+import os
 
 # Load the trained XGBoost model
 model = joblib.load('xgboost_model.pkl')
