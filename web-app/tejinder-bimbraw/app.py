@@ -1,35 +1,78 @@
-
-
 import streamlit as st
-import joblib
 import numpy as np
 import pandas as pd
+import joblib
 import os
 
-# Load the trained XGBoost model
-model = joblib.load('xgboost_model.pkl')
+# Set page configuration and title
+st.set_page_config(page_title='Student Performance Prediction', layout='centered')
 
-# Streamlit app title
-st.title("XGBoost Regression Model")
+# Cache the model loading
+@st.cache_resource
+def load_model():
+    model_path = os.path.join(os.path.dirname(__file__), 'xgboost_model.pkl')   
+    model = joblib.load(model_path)
+    return model
 
-# Add some instructions for the user
-st.write("""
-    This app predicts the target variable based on the features provided.
-    Please enter values for the features and press 'Predict' to see the result.
-""")
+model = load_model()
 
-# Input fields for user to enter data
-# Adjust the feature names and input types according to your dataset
-absences = st.number_input('absences', value=0.0)
-higher = st.number_input('wants to take higher education input is binary', value=0.0)
-famrel = st.number_input('quality of family relationships on scale of 1 to 5', value=0.0)
-G1 = st.number_input('Firt period grade', value=0.0)
-G2 = st.number_input('Second period grade', value=0.0)
+# App title
+st.title(":orange[Student Performance Prediction]")  # Title spans across the whole page
 
-# Gather the input data into a dataframe
-input_data = pd.DataFrame([[absences, higher, famrel, G1,G2]], columns=['absences', 'higher', 'famrel', 'G1', 'G2'])
 
-# Make predictions when the user clicks the 'Predict' button
-if st.button('Predict'):
-    prediction = model.predict(input_data)
-    st.write(f"Predicted value: {prediction[0]}")
+# Split the page into two columns
+col1, col2 = st.columns([1, 2])  # Split into two columns: col1 takes 1/3, col2 takes 2/3
+
+# Left column: About the study
+with col1:
+    st.header("About the Study")
+    st.write("""
+    This study explores various factors that affect student performance, 
+    with the goal of predicting their final grades based on input features. 
+    Some of the key features include:
+    - Mother's education level
+    - Alcohol consumption on workdays and weekends
+    - Number of school absences
+    - First and second period grades
+    - Participation in extracurricular activities
+
+    Link to Dataset: https://archive.ics.uci.edu/dataset/320/student+performance
+    
+    This project is a collaborative initiative brought by SuperDataScience community
+
+ """)
+
+# Right column: Feature input
+with col2:
+
+    st.header("Input Features")  # Feature input title is now part of the input container
+
+
+    absences = st.number_input("Number of School Absences (0-93)", min_value=0, max_value=93, step=1)
+    G1 = st.number_input("First Period Grade (0-20)", min_value=0, max_value=20, step=1)
+    G2 = st.number_input("Second Period Grade (0-20)", min_value=0, max_value=20, step=1)
+    higher = st.selectbox("Aiming for Higher Education (yes/no)", ['yes', 'no'])
+    famrel = st.number_input("quality of family relationships on scale of 1 to 5 (5 being the best)",min_value=1,max_value=5,step = 1)
+
+    # Columns definition for model prediction
+    columns = [ 'absences', 'G1', 'G2', 'higher','famrel']
+
+    def preprocess_input( absences, G1, G2, higher, famrel):
+        # Encode categorical variables
+        higher_encoded = 1 if higher == 'yes' else 0
+        
+                
+        # Construct input array
+        row = np.array([ absences, G1, G2, higher_encoded,famrel])
+        return pd.DataFrame([row], columns=columns)
+
+    # Prediction function
+    def predict():
+        X = preprocess_input( absences, G1, G2, higher,famrel)
+        with st.spinner("Making prediction..."):
+            prediction = model.predict(X)[0]
+        st.success(f"Predicted Final Grade: {prediction:.2f}")
+
+    # Prediction button
+    if st.button("Predict"):
+        predict()
